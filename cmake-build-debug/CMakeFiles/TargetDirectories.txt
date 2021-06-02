@@ -1,0 +1,3 @@
+C:/Users/vanel/code/rulertest/cmake-build-debug/CMakeFiles/rulertest.dir
+C:/Users/vanel/code/rulertest/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/vanel/code/rulertest/cmake-build-debug/CMakeFiles/rebuild_cache.dir
