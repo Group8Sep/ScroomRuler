@@ -16,15 +16,15 @@ Ruler::Ruler(Ruler::Orientation orientation)
 {
 }
 
-void Ruler::setDrawingArea(GtkWidget *drawingArea) {
-    this->drawingArea = drawingArea;
+void Ruler::setDrawingArea(GtkWidget *widget) {
+    this->drawingArea = widget;
 
-    width = gtk_widget_get_allocated_width(drawingArea);
-    height = gtk_widget_get_allocated_height(drawingArea);
+    width = gtk_widget_get_allocated_width(widget);
+    height = gtk_widget_get_allocated_height(widget);
 
     // Register callbacks
-    g_signal_connect(static_cast<gpointer>(drawingArea), "draw", G_CALLBACK(drawCallback), this);
-    g_signal_connect(static_cast<gpointer>(drawingArea), "size-allocate", G_CALLBACK(sizeAllocateCallback), this);
+    g_signal_connect(static_cast<gpointer>(widget), "draw", G_CALLBACK(drawCallback), this);
+    g_signal_connect(static_cast<gpointer>(widget), "size-allocate", G_CALLBACK(sizeAllocateCallback), this);
 }
 
 void Ruler::setRange(double lower, double upper) {
@@ -104,7 +104,7 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data) {
     // Draw outline along left and right sides and along the bottom
     gdk_cairo_set_source_rgba(cr, &(ruler->lineColor));
 
-    cairo_set_line_width(cr, ruler->LINE_WIDTH);
+    cairo_set_line_width(cr, Ruler::LINE_WIDTH);
     if (ruler->orientation == HORIZONTAL)
     {
         cairo_move_to(cr, 0, 0);
@@ -114,7 +114,7 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_line_to(cr, width, height);
         cairo_stroke(cr);
 
-        cairo_set_line_width(cr, 2 * ruler->LINE_WIDTH);
+        cairo_set_line_width(cr, 2 * Ruler::LINE_WIDTH);
         cairo_move_to(cr, 0, height);
         cairo_line_to(cr, width, height);
         cairo_stroke(cr);
@@ -128,19 +128,19 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_line_to(cr, width, height);
         cairo_stroke(cr);
 
-        cairo_set_line_width(cr, 2 * ruler->LINE_WIDTH);
+        cairo_set_line_width(cr, 2 * Ruler::LINE_WIDTH);
         cairo_move_to(cr, width, 0);
         cairo_line_to(cr, width, height);
         cairo_stroke(cr);
     }
-    cairo_set_line_width(cr, ruler->LINE_WIDTH);
+    cairo_set_line_width(cr, Ruler::LINE_WIDTH);
 
     // Calculate the line length for the major ticks given the size of the ruler
     double lineLength;
     if (ruler->orientation == HORIZONTAL)
-        lineLength = ruler->MAJOR_TICK_LENGTH * height;
+        lineLength = Ruler::MAJOR_TICK_LENGTH * height;
     else
-        lineLength = ruler->MAJOR_TICK_LENGTH * width;
+        lineLength = Ruler::MAJOR_TICK_LENGTH * width;
 
     // Draw positive side of the ruler from lower to upper
     ruler->drawTicks(cr, 0, ruler->upperLimit, true, lineLength);
@@ -151,9 +151,9 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
-void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lower_to_upper, double lineLength) {
+void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength) {
     double t; // Position in ruler range
-    if (lower_to_upper)
+    if (lowerToUpper)
         t = lower;
     else
         t = upper;
@@ -172,21 +172,21 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lower_to_upp
     }
 
     // Move t across range
-    while ((lower_to_upper && t < upper) || (!lower_to_upper && lower < t))
+    while ((lowerToUpper && t < upper) || (!lowerToUpper && lower < t))
     {
         // Map t from the ruler range to a drawing area position
         double s = mapRange(t, lowerLimit, upperLimit, origin, origin + size);
         // Draw tick for this position
         drawSingleTick(cr, s, lineLength, true, std::to_string(static_cast<int>(floor(t))));
 
-        if (lower_to_upper)
+        if (lowerToUpper)
         {
-            drawSubTicks(cr, s, s + segmentScreenSize, 0, 0.5 * lineLength, lower_to_upper);
+            drawSubTicks(cr, s, s + segmentScreenSize, 0, 0.5 * lineLength, lowerToUpper);
             t += majorInterval;
         }
         else
         {
-            drawSubTicks(cr, s - segmentScreenSize, s, 0, 0.5 * lineLength, lower_to_upper);
+            drawSubTicks(cr, s - segmentScreenSize, s, 0, 0.5 * lineLength, lowerToUpper);
             t -= majorInterval;
         }
     }
@@ -201,7 +201,7 @@ void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle *allocation, gp
     ruler->update();
 }
 
-void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, std::string label) {
+void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, const std::string& label) {
     if (orientation == HORIZONTAL)
     {
         // [BUG] Setting the line width to LINE_WIDTH here still draws the lines rather thick.
@@ -248,7 +248,7 @@ void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bo
     cairo_restore(cr);
 }
 
-void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lower_to_upper) {
+void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lowerToUpper) {
 
     // We don't need to divide the segment any further so return
     if (depth >= SUBTICK_SEGMENTS.size()) return;
@@ -263,37 +263,37 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
     double limit;
     if (orientation == HORIZONTAL)
     {
-        if (lower_to_upper)
+        if (lowerToUpper)
             limit = width;
         else
             limit = 0;
     }
     else if (orientation == VERTICAL)
     {
-        if (lower_to_upper)
+        if (lowerToUpper)
             limit = height;
         else
             limit = 0;
     }
 
     double s; // Position to draw tick at
-    if (lower_to_upper)
+    if (lowerToUpper)
         s = lower;
     else
         s = upper;
 
-    while ((lower_to_upper && s < upper && s < limit) || (!lower_to_upper && lower < s && limit < s))
+    while ((lowerToUpper && s < upper && s < limit) || (!lowerToUpper && lower < s && limit < s))
     {
         drawSingleTick(cr, s, lineLength, false, "");
-        if (lower_to_upper)
+        if (lowerToUpper)
         {
             // Draw ticks at level below
-            drawSubTicks(cr, s, s + interval, depth + 1, 0.5 * lineLength, lower_to_upper);
+            drawSubTicks(cr, s, s + interval, depth + 1, 0.5 * lineLength, lowerToUpper);
             s += interval;
         }
         else
         {
-            drawSubTicks(cr, s - interval, s, depth + 1, 0.5 * lineLength, lower_to_upper);
+            drawSubTicks(cr, s - interval, s, depth + 1, 0.5 * lineLength, lowerToUpper);
             s -= interval;
         }
     }

@@ -44,7 +44,7 @@ private:
      * Each space between major ticks is split into 5 smaller segments and
      * those segments are split into 2. (Assuming there's enough space.)
      */
-    constexpr static std::array<double, 2> SUBTICK_SEGMENTS {
+    constexpr static std::array<int, 2> SUBTICK_SEGMENTS {
             5, 2
     };
 
@@ -111,10 +111,10 @@ private:
      * @param cr Cairo context to draw to.
      * @param lower The lower limit of the range to draw.
      * @param upper The upper limit of the range to draw.
-     * @param lower_to_upper True if the ticks should be drawn from lower to upper. False if from upper to lower.
+     * @param lowerToUpper True if the ticks should be drawn from lower to upper. False if from upper to lower.
      * @param lineLength Length of the lines in pixels.
      */
-    void drawTicks(cairo_t *cr, double lower, double upper, bool lower_to_upper, double lineLength);
+    void drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength);
 
     /**
      * Draws a single tick, taking into account the ruler's orientation.
@@ -124,7 +124,7 @@ private:
      * @param drawLabel True if a label should be drawn to the right/top of the line.
      * @param label The label to draw if \p drawLabel is true.
      */
-    void drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, std::string label);
+    void drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, const std::string& label);
 
     /**
      * Draws the smaller ticks in between the major ticks.
@@ -133,15 +133,15 @@ private:
      * @param upper The upper limit of the range in draw space.
      * @param depth The depth of this recursive function. Functions as an index into the ruler's SUBTICK_SEGMENTS array.
      * @param lineLength Length of the lines in pixels.
-     * @param lower_to_upper True if the ticks should be drawn from lower to upper. False if from upper to lower.
+     * @param lowerToUpper True if the ticks should be drawn from lower to upper. False if from upper to lower.
      */
-    void drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lower_to_upper);
+    void drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lowerToUpper);
 
     /**
      * Registers the required callbacks with the drawing area.
-     * @param drawingArea Drawing area to draw the ruler to.
+     * @param widget Drawing area to draw the ruler to.
      */
-    void setDrawingArea(GtkWidget *drawingArea);
+    void setDrawingArea(GtkWidget *widget);
 
     /**
      * Maps x from range a to range b.
