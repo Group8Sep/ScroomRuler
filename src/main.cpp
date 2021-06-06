@@ -29,9 +29,11 @@ main (int   argc,
 
     hRulerArea = gtk_builder_get_object(builder, "hrulerarea");
     Ruler::Ptr hruler = Ruler::create(Ruler::HORIZONTAL, GTK_WIDGET(hRulerArea));
+    hruler->setRange(-10, 10);
 
     vRulerArea = gtk_builder_get_object(builder, "vrulerarea");
     Ruler::Ptr vruler = Ruler::create(Ruler::VERTICAL, GTK_WIDGET(vRulerArea));
+    vruler->setRange(-10, 10);
 
     gtk_main ();
 

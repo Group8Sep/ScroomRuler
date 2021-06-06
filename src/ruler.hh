@@ -30,13 +30,13 @@ private:
     GtkWidget *drawingArea{};
 
     /** The minimum space between major ticks. */
-    const int MIN_SEGMENT_SIZE{50};
+    constexpr static int MIN_SEGMENT_SIZE{50};
 
     /** The minimum space between sub-ticks. */
-    const int MIN_SPACE_SUBTICKS{5};
+    constexpr static int MIN_SPACE_SUBTICKS{5};
 
     /** Valid intervals between major ticks. */
-    const std::array<double, 5> VALID_INTERVALS {
+    constexpr static std::array<double, 5> VALID_INTERVALS {
         1, 2, 5, 10, 25
     };
 
@@ -44,7 +44,7 @@ private:
      * Each space between major ticks is split into 5 smaller segments and
      * those segments are split into 2. (Assuming there's enough space.)
      */
-    const std::array<double, 2> SUBTICK_SEGMENTS {
+    constexpr static std::array<double, 2> SUBTICK_SEGMENTS {
             5, 2
     };
 
@@ -66,15 +66,19 @@ private:
 
     // ==== DRAWING PROPERTIES ====
 
-    GdkRGBA bgColor{0.5, 0.5, 1, 1};
+    const double LABEL_OFFSET{4};
+
+    //GdkRGBA bgColor{0.5, 0.5, 1, 1};
     GdkRGBA lineColor{0, 0, 0, 1};
 
-    const double LINE_WIDTH = 2;
+    constexpr static double LINE_WIDTH{2};
 
     /** Length of the major tick lines as a fraction of the width/height. */
-    const double MAJOR_TICK_LENGTH = 0.8;
+    constexpr static double MAJOR_TICK_LENGTH{0.8};
 
-    /** Creates a ruler. */
+    /**
+     * Creates a ruler.
+     */
     explicit Ruler(Orientation orientation);
 
 
