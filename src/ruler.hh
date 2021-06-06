@@ -16,7 +16,7 @@ public:
      * @param drawArea The GtkDrawingArea to draw the ruler to.
      * @return The newly created ruler.
      */
-    static Ptr create(Orientation orientation, GtkDrawingArea *drawArea);
+    static Ptr create(Orientation orientation, GtkWidget *drawArea);
 
     /**
      * Sets the range for the ruler to display.
@@ -27,7 +27,7 @@ public:
 
 private:
 
-    GtkDrawingArea *drawingArea;
+    GtkWidget *drawingArea{};
 
     /** The minimum space between major ticks. */
     const int MIN_SEGMENT_SIZE{50};
@@ -66,8 +66,8 @@ private:
 
     // ==== DRAWING PROPERTIES ====
 
-    std::array<double, 3> bgColor{ 0.8, 0.8, 0.8};
-    std::array<double, 3> lineColor{ 0, 0, 0};
+    GdkRGBA bgColor{0.5, 0.5, 1, 1};
+    GdkRGBA lineColor{0, 0, 0, 1};
 
     /** Length of the major tick lines as a fraction of the width/height. */
     const double MAJOR_TICK_LENGTH = 0.8;
@@ -82,6 +82,7 @@ private:
      * @param widget The widget that received the signal.
      * @param cr Cairo context to draw to.
      * @param data Pointer to a ruler instance.
+     * @returns TRUE to stop other handlers from being invoked for the event. FALSE to propagate the event further.
      */
     static gboolean drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data);
 
@@ -107,7 +108,7 @@ private:
      * @param lower_to_upper True if the ticks should be drawn from lower to upper. False if from upper to lower.
      * @param lineLength Length of the lines in pixels.
      */
-    void drawTicks(cairo_t *cr, double lower, double upper, bool lower_to_upper, int lineLength);
+    void drawTicks(cairo_t *cr, double lower, double upper, bool lower_to_upper, double lineLength);
 
     /**
      * Draws a single tick, taking into account the ruler's orientation.
@@ -117,7 +118,7 @@ private:
      * @param drawLabel True if a label should be drawn to the right/top of the line.
      * @param label The label to draw if \p drawLabel is true.
      */
-    void drawSingleTick(cairo_t *cr, double lineOrigin, int lineLength, bool drawLabel, std::string label);
+    void drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, std::string label);
 
     /**
      * Draws the smaller ticks in between the major ticks.
@@ -128,23 +129,22 @@ private:
      * @param lineLength Length of the lines in pixels.
      * @param lower_to_upper True if the ticks should be drawn from lower to upper. False if from upper to lower.
      */
-    void drawSubTicks(cairo_t *cr, double lower, double upper, int depth, int lineLength, bool lower_to_upper)
-
-    /**
-     * Maps x from range a to range b.
-     * @param x The input to map from range a to b.
-     * @param lower_a The lower limit of range a.
-     * @param upper_a The upper limit of range a.
-     * @param lower_b The lower limit of range b.
-     * @param upper_b The upper limit of range b.
-     * @return The result of \p x mapped from range a to b.
-     */
-    double mapRange(double x, double lower_a, double upper_a, double lower_b, double upper_b);
+    void drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lower_to_upper);
 
     /**
      * Registers the required callbacks with the drawing area.
      * @param drawingArea Drawing area to draw the ruler to.
      */
-    void setDrawingArea(GtkDrawingArea *drawingArea);
+    void setDrawingArea(GtkWidget *drawingArea);
 
+    /**
+     * Maps x from range a to range b.
+     * @param x The input to map from range a to b.
+     * @param a_lower The lower limit of range a.
+     * @param a_upper The upper limit of range a.
+     * @param b_lower The lower limit of range b.
+     * @param b_upper The upper limit of range b.
+     * @return The result of \p x mapped from range a to b.
+     */
+    static double mapRange(double x, double a_lower, double a_upper, double b_lower, double b_upper);
 };
