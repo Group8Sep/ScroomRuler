@@ -19,6 +19,9 @@ Ruler::Ruler(Ruler::Orientation orientation)
 void Ruler::setDrawingArea(GtkWidget *drawingArea) {
     this->drawingArea = drawingArea;
 
+    width = gtk_widget_get_allocated_width(drawingArea);
+    height = gtk_widget_get_allocated_height(drawingArea);
+
     // Register callbacks
     g_signal_connect(static_cast<gpointer>(drawingArea), "draw", G_CALLBACK(drawCallback), this);
     g_signal_connect(static_cast<gpointer>(drawingArea), "size-allocate", G_CALLBACK(sizeAllocateCallback), this);
@@ -89,24 +92,47 @@ double Ruler::mapRange(double x, double a_lower, double a_upper, double b_lower,
 
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
-    // [BUG] When the application launches, this draw callback appears to be executed
-    // (tested with a simple print to console), but nothing is visible on the screen?
-    // It does appear fine as soon as the window is resized.
-
     auto *ruler = static_cast<Ruler*>(data);
+
+    double width = ruler->width;
+    double height = ruler->height;
 
     // Draw background
     GtkStyleContext *context = gtk_widget_get_style_context (widget);
     gtk_render_background(context, cr, 0, 0, ruler->width, ruler->height);
 
-    // Draw an X across the whole area
+    // Draw outline along left and right sides and along the bottom
     gdk_cairo_set_source_rgba(cr, &(ruler->lineColor));
-    cairo_move_to(cr, 0, 0);
-    cairo_line_to(cr, ruler->width, ruler->height);
-    cairo_move_to(cr, ruler->width, 0);
-    cairo_line_to(cr, 0, ruler->height);
-    cairo_set_line_width(cr, 1);
-    cairo_stroke(cr);
+
+    cairo_set_line_width(cr, ruler->LINE_WIDTH);
+    if (ruler->orientation == HORIZONTAL)
+    {
+        cairo_move_to(cr, 0, 0);
+        cairo_line_to(cr, 0, height);
+
+        cairo_move_to(cr, width, 0);
+        cairo_line_to(cr, width, height);
+        cairo_stroke(cr);
+
+        cairo_set_line_width(cr, 2 * ruler->LINE_WIDTH);
+        cairo_move_to(cr, 0, height);
+        cairo_line_to(cr, width, height);
+        cairo_stroke(cr);
+    }
+    else if (ruler->orientation == VERTICAL)
+    {
+        cairo_move_to(cr, 0, 0);
+        cairo_line_to(cr, width, 0);
+
+        cairo_move_to(cr, 0, height);
+        cairo_line_to(cr, width, height);
+        cairo_stroke(cr);
+
+        cairo_set_line_width(cr, 2 * ruler->LINE_WIDTH);
+        cairo_move_to(cr, width, 0);
+        cairo_line_to(cr, width, height);
+        cairo_stroke(cr);
+    }
 
     return FALSE;
 }

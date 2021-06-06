@@ -69,6 +69,8 @@ private:
     GdkRGBA bgColor{0.5, 0.5, 1, 1};
     GdkRGBA lineColor{0, 0, 0, 1};
 
+    const double LINE_WIDTH = 2;
+
     /** Length of the major tick lines as a fraction of the width/height. */
     const double MAJOR_TICK_LENGTH = 0.8;
 
