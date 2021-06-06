@@ -204,16 +204,18 @@ void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle *allocation, gp
 void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, std::string label) {
     if (orientation == HORIZONTAL)
     {
-        // [NOTE] Even though I'm setting the line width to LINE_WIDTH, they're being drawn super thick
+        // [BUG] Setting the line width to LINE_WIDTH here still draws the lines rather thick.
         // Probably some sub-pixel rounding errors or transform matrix shenanigens going on
-        cairo_set_line_width(cr, LINE_WIDTH);
+        // so for now I just half LINE_WIDTH to achieve the right end-result.
+        // (Yes, that's ugly and might break somewhere later, but for now this works.)
+        cairo_set_line_width(cr, 0.5 * LINE_WIDTH);
         cairo_move_to(cr, lineOrigin, height);
         cairo_line_to(cr, lineOrigin, height - lineLength);
         cairo_stroke(cr);
     }
     else if (orientation == VERTICAL)
     {
-        cairo_set_line_width(cr, LINE_WIDTH);
+        cairo_set_line_width(cr, 0.5 * LINE_WIDTH);
         cairo_move_to(cr, width, lineOrigin);
         cairo_line_to(cr, width - lineLength, lineOrigin);
         cairo_stroke(cr);
@@ -248,4 +250,51 @@ void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bo
 
 void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lower_to_upper) {
 
+    // We don't need to divide the segment any further so return
+    if (depth >= SUBTICK_SEGMENTS.size()) return;
+
+    int numSegments = SUBTICK_SEGMENTS[depth];
+    double interval = abs(upper - lower) / numSegments;
+
+    if (interval < MIN_SPACE_SUBTICKS) return;
+
+    // We draw from lower->upper / upper->lower, but in the process, we might be exceeding
+    // the ruler area, so we also check that we're still inside the drawing area
+    double limit;
+    if (orientation == HORIZONTAL)
+    {
+        if (lower_to_upper)
+            limit = width;
+        else
+            limit = 0;
+    }
+    else if (orientation == VERTICAL)
+    {
+        if (lower_to_upper)
+            limit = height;
+        else
+            limit = 0;
+    }
+
+    double s; // Position to draw tick at
+    if (lower_to_upper)
+        s = lower;
+    else
+        s = upper;
+
+    while ((lower_to_upper && s < upper && s < limit) || (!lower_to_upper && lower < s && limit < s))
+    {
+        drawSingleTick(cr, s, lineLength, false, "");
+        if (lower_to_upper)
+        {
+            // Draw ticks at level below
+            drawSubTicks(cr, s, s + interval, depth + 1, 0.5 * lineLength, lower_to_upper);
+            s += interval;
+        }
+        else
+        {
+            drawSubTicks(cr, s - interval, s, depth + 1, 0.5 * lineLength, lower_to_upper);
+            s -= interval;
+        }
+    }
 }
