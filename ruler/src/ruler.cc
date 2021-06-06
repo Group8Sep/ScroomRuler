@@ -7,7 +7,10 @@
 
 Ruler::Ptr Ruler::create(Ruler::Orientation orientation, GtkWidget *drawingArea) {
     Ruler::Ptr ruler{new Ruler(orientation)};
-    ruler->setDrawingArea(drawingArea);
+    if (drawingArea != nullptr)
+    {
+        ruler->setDrawingArea(drawingArea);
+    }
     return ruler;
 }
 
@@ -31,6 +34,8 @@ void Ruler::setRange(double lower, double upper) {
     lowerLimit = lower;
     upperLimit = upper;
 
+    if (drawingArea == nullptr) return;
+
     update();
 
     // We need to manually trigger the widget to redraw
@@ -38,6 +43,9 @@ void Ruler::setRange(double lower, double upper) {
 }
 
 void Ruler::update() {
+
+    if (drawingArea == nullptr) return;
+
     // We need to calculate the distance between the largest ticks on the ruler
     // We will try each interval sequentially until we find an interval which
     // will produce segments of a large enough width/height when drawn
@@ -93,6 +101,8 @@ double Ruler::mapRange(double x, double a_lower, double a_upper, double b_lower,
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     auto *ruler = static_cast<Ruler*>(data);
+
+    if (ruler->drawingArea == nullptr) return FALSE;
 
     double width = ruler->width;
     double height = ruler->height;
@@ -194,6 +204,8 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper
 
 void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle *allocation, gpointer data) {
     auto *ruler = static_cast<Ruler*>(data);
+
+    if (ruler->drawingArea == nullptr) return;
 
     ruler->width = gtk_widget_get_allocated_width(widget);
     ruler->height = gtk_widget_get_allocated_height(widget);

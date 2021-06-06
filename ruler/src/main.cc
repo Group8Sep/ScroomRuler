@@ -16,7 +16,7 @@ main (int   argc,
 
     /* Construct a GtkBuilder instance and load our UI description */
     builder = gtk_builder_new ();
-    if (gtk_builder_add_from_file (builder, "src/builder.ui", &error) == 0)
+    if (gtk_builder_add_from_file (builder, "builder.ui", &error) == 0)
     {
         g_printerr ("Error loading file: %s\n", error->message);
         g_clear_error (&error);
@@ -29,10 +29,10 @@ main (int   argc,
 
     hRulerArea = gtk_builder_get_object(builder, "hrulerarea");
     Ruler::Ptr hruler = Ruler::create(Ruler::HORIZONTAL, GTK_WIDGET(hRulerArea));
-    hruler->setRange(-10, 10);
+    hruler->setRange(-7, 23);
 
     vRulerArea = gtk_builder_get_object(builder, "vrulerarea");
-    Ruler::Ptr vruler = Ruler::create(Ruler::VERTICAL, GTK_WIDGET(vRulerArea));
+    Ruler::Ptr vruler = Ruler::create(Ruler::VERTICAL, nullptr);
     vruler->setRange(-10, 10);
 
     gtk_main ();
