@@ -1,5 +1,0 @@
-#add_subdirectory(pthreads)
-add_subdirectory(boost)
-#add_subdirectory(gtk2)
-#add_subdirectory(zlib)
-#add_subdirectory(tiff)
