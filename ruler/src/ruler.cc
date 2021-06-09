@@ -80,9 +80,9 @@ void Ruler::update()
 
     while (true)
     {
-        if (VALID_INTERVALS[intervalIndex] != 1 || intervalN != 0)
+        if (VALID_INTERVALS.at(intervalIndex) != 1 || intervalN != 0)
         {
-            majorInterval = VALID_INTERVALS[intervalIndex] * pow(INTERVAL_BASE, intervalN);
+            majorInterval = VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN);
 
             // We check versus the width or height depending on orientation
             double rulerSize = NAN;
@@ -122,8 +122,6 @@ double Ruler::mapRange(double x, double a_lower, double a_upper, double b_lower,
     return b_lower + scale * (x - a_lower);
 }
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "ConstantFunctionResult"
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
 {
 
@@ -144,29 +142,29 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_line_width(cr, Ruler::LINE_WIDTH);
     if (ruler->orientation == HORIZONTAL)
     {
-        cairo_move_to(cr, 0, 0);
-        cairo_line_to(cr, 0, height);
+        cairo_move_to(cr, LINE_COORD_OFFSET, 0);
+        cairo_line_to(cr, LINE_COORD_OFFSET, height);
 
-        cairo_move_to(cr, width, 0);
-        cairo_line_to(cr, width, height);
+        cairo_move_to(cr, width - LINE_COORD_OFFSET, 0);
+        cairo_line_to(cr, width - LINE_COORD_OFFSET, height);
         cairo_stroke(cr);
 
         cairo_set_line_width(cr, 2 * Ruler::LINE_WIDTH);
-        cairo_move_to(cr, 0, height);
-        cairo_line_to(cr, width, height);
+        cairo_move_to(cr, 0, height - LINE_COORD_OFFSET);
+        cairo_line_to(cr, width, height - LINE_COORD_OFFSET);
         cairo_stroke(cr);
     } else if (ruler->orientation == VERTICAL)
     {
-        cairo_move_to(cr, 0, 0);
-        cairo_line_to(cr, width, 0);
+        cairo_move_to(cr, 0, LINE_COORD_OFFSET);
+        cairo_line_to(cr, width, LINE_COORD_OFFSET);
 
-        cairo_move_to(cr, 0, height);
-        cairo_line_to(cr, width, height);
+        cairo_move_to(cr, 0, height - LINE_COORD_OFFSET);
+        cairo_line_to(cr, width, height - LINE_COORD_OFFSET);
         cairo_stroke(cr);
 
         cairo_set_line_width(cr, 2 * Ruler::LINE_WIDTH);
-        cairo_move_to(cr, width, 0);
-        cairo_line_to(cr, width, height);
+        cairo_move_to(cr, width - LINE_COORD_OFFSET, 0);
+        cairo_line_to(cr, width - LINE_COORD_OFFSET, height);
         cairo_stroke(cr);
     }
     cairo_set_line_width(cr, Ruler::LINE_WIDTH);
@@ -182,15 +180,22 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
         lineLength = Ruler::MAJOR_TICK_LENGTH * width;
     }
 
-    // Draw positive side of the ruler from lower to upper
-    ruler->drawTicks(cr, 0, ruler->upperLimit, true, lineLength);
+    // Draw positive side of the ruler
+    if (ruler->upperLimit > 0) // If part of the range is indeed positive
+    {
+        // Draw the range [max(0, lowerLimit), upperLimit]
+        ruler->drawTicks(cr, std::max(0.0, ruler->lowerLimit), ruler->upperLimit, true, lineLength);
+    }
 
     // Draw negative side of the ruler from upper to lower
-    ruler->drawTicks(cr, ruler->lowerLimit, 0, false, lineLength);
+    if (ruler->lowerLimit < 0) // If part of the range is indeed negative
+    {
+        // Draw the range [lowerLimit, min(0, lowerLimit)]
+        ruler->drawTicks(cr, ruler->lowerLimit, std::min(0.0, ruler->upperLimit), false, lineLength);
+    }
 
     return FALSE;
 }
-#pragma clang diagnostic pop
 
 void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength)
 {
@@ -250,31 +255,29 @@ void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle * /*allocation*
 
 void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, const std::string &label)
 {
+    // Draw line
     if (orientation == HORIZONTAL)
     {
-        // [BUG] Setting the line width to LINE_WIDTH here still draws the lines rather thick.
-        // Probably some sub-pixel rounding errors or transform matrix shenanigans going on
-        // so for now I just half LINE_WIDTH to achieve the right end-result.
-        // (Yes, that's ugly and might break somewhere later, but for now this works.)
-        cairo_set_line_width(cr, LINE_MULTIPLIER * LINE_WIDTH);
-        cairo_move_to(cr, lineOrigin, height);
-        cairo_line_to(cr, lineOrigin, height - lineLength);
+        cairo_set_line_width(cr, LINE_WIDTH);
+        cairo_move_to(cr, lineOrigin - LINE_COORD_OFFSET, height);
+        cairo_line_to(cr, lineOrigin - LINE_COORD_OFFSET, height - lineLength);
         cairo_stroke(cr);
-    } else if (orientation == VERTICAL)
+    }
+    else if (orientation == VERTICAL)
     {
-        cairo_set_line_width(cr, LINE_MULTIPLIER * LINE_WIDTH);
-        cairo_move_to(cr, width, lineOrigin);
-        cairo_line_to(cr, width - lineLength, lineOrigin);
+        cairo_set_line_width(cr, LINE_WIDTH);
+        cairo_move_to(cr, width, lineOrigin - LINE_COORD_OFFSET);
+        cairo_line_to(cr, width - lineLength, lineOrigin - LINE_COORD_OFFSET);
         cairo_stroke(cr);
     }
 
     cairo_save(cr);
     if (drawLabel)
     {
-        // Get the extents of the text if it were drawn
-        // [NOTE] Text sizing and stuff is probably still inconsistent between Windows and Linux.
-        // Selecting an explicit font type might help.
+        // Set text font and size
+        cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_font_size(cr, FONT_SIZE);
+        // Get the extents of the text if it were drawn
         cairo_text_extents_t textExtents;
         cairo_text_extents(cr, label.c_str(), &textExtents);
         // Draw the label if there's enough room
@@ -302,7 +305,7 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
     // We don't need to divide the segment any further so return
     if (depth >= SUBTICK_SEGMENTS.size()) { return; }
 
-    int numSegments = SUBTICK_SEGMENTS[depth];
+    int numSegments = SUBTICK_SEGMENTS.at(depth);
     double interval = abs(upper - lower) / numSegments;
 
     if (interval < MIN_SPACE_SUBTICKS) { return; }
