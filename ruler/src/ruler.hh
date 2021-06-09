@@ -3,6 +3,11 @@
 #include <gtk/gtk.h>
 #include <boost/smart_ptr.hpp>
 
+namespace RulerUnitTest
+{
+    struct RulerTester;
+}
+
 /**
  * This class draws a ruler to a GtkDrawingArea.
  * It is intended as a replacement for the old GTK2 ruler widget and is written
@@ -40,7 +45,16 @@ public:
      */
     void setRange(double lower, double upper);
 
+    /**
+     * Connects signal handlers to a drawing area.
+     * @param widget Drawing area to draw the ruler to.
+     */
+    void setDrawingArea(GtkWidget *widget);
+
 private:
+
+    // Declare a friend struct to test private methods
+    friend struct RulerUnitTest::RulerTester;
 
     GtkWidget *drawingArea{};
 
@@ -169,12 +183,6 @@ private:
      * @param lowerToUpper True if the ticks should be drawn from lower to upper. False if from upper to lower.
      */
     void drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lowerToUpper);
-
-    /**
-     * Registers the required callbacks with the drawing area.
-     * @param widget Drawing area to draw the ruler to.
-     */
-    void setDrawingArea(GtkWidget *widget);
 
     /**
      * Maps x from range a to range b.
