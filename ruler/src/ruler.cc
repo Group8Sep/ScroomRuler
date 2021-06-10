@@ -22,8 +22,8 @@ Ruler::Ruler(Ruler::Orientation orientation, GtkWidget* drawingAreaWidget)
     //require(drawingArea != nullptr);
 
     // Connect signal handlers
-    g_signal_connect(drawingAreaWidget, "draw", G_CALLBACK(drawCallback), this);
-    g_signal_connect(drawingAreaWidget, "size-allocate", G_CALLBACK(sizeAllocateCallback), this);
+    g_signal_connect(drawingAreaWidget, "draw", G_CALLBACK(drawCallback), this); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
+    g_signal_connect(drawingAreaWidget, "size-allocate", G_CALLBACK(sizeAllocateCallback), this); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
     // Calculate tick intervals and spacing
     calculateTickIntervals();
 }
