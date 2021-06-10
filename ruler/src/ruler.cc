@@ -93,7 +93,8 @@ void Ruler::update()
             }
             // Calculate the drawn size for this interval by mapping from the ruler range
             // to the ruler size on the screen
-            segmentScreenSize = floor(mapRange(majorInterval, 0.0, upperLimit - lowerLimit, 0.0, rulerSize));
+            segmentScreenSize = floor(
+                    RulerCalculations::scaleToRange(majorInterval, 0.0, upperLimit - lowerLimit, 0.0, rulerSize));
 
             // If we've found a segment of appropriate size, we can stop
             if (segmentScreenSize >= MIN_SEGMENT_SIZE) { break; }
@@ -108,15 +109,6 @@ void Ruler::update()
             intervalN++;
         }
     }
-}
-
-double Ruler::mapRange(double x, double a_lower, double a_upper, double b_lower, double b_upper)
-{
-    double a_width = a_upper - a_lower;
-    double b_width = b_upper - b_lower;
-    double scale = b_width / a_width;
-
-    return b_lower + scale * (x - a_lower);
 }
 
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -222,7 +214,7 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper
     while ((lowerToUpper && t < upper) || (!lowerToUpper && lower < t))
     {
         // Map t from the ruler range to a drawing area position
-        double s = mapRange(t, lowerLimit, upperLimit, origin, origin + size);
+        double s = RulerCalculations::scaleToRange(t, lowerLimit, upperLimit, origin, origin + size);
         // Draw tick for this position
         drawSingleTick(cr, s, lineLength, true, std::to_string(static_cast<int>(floor(t))));
 
@@ -356,4 +348,13 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
             s -= interval;
         }
     }
+}
+
+double RulerCalculations::scaleToRange(double x, double src_lower, double src_upper, double dest_lower, double dest_upper)
+{
+    double src_size = src_upper - src_lower;
+    double dest_size = dest_upper - dest_lower;
+    double scale = dest_size / src_size;
+
+    return dest_lower + round(scale * (x - src_lower));
 }

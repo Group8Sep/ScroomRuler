@@ -182,15 +182,23 @@ private:
      * @param lowerToUpper True if the ticks should be drawn from lower to upper. False if from upper to lower.
      */
     void drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lowerToUpper);
+};
 
+/**
+ * This class contains the functions a Ruler uses to calculate the interval between major ticks.
+ */
+class RulerCalculations
+{
+public:
     /**
-     * Maps x from range a to range b.
-     * @param x The input to map from range a to b.
-     * @param a_lower The lower limit of range a.
-     * @param a_upper The upper limit of range a.
-     * @param b_lower The lower limit of range b.
-     * @param b_upper The upper limit of range b.
-     * @return The result of \p x mapped from range a to b.
+     * Scales a number \p x in the range [\p src_lower, \p src_upper] to the range [\p dest_lower, \p dest_upper].
+     * Used to scale from the ruler range to the drawing space.
+     * @param x The number to scale.
+     * @param src_lower The lower limit of the source range. Inclusive.
+     * @param src_upper The upper limit of the source range. Inclusive.
+     * @param dest_lower The lower limit of the destination range. Inclusive.
+     * @param dest_upper The upper limit of the destination range. Inclusive.
+     * @return The result of \p x scaled from range source to dest.
      */
-    static double mapRange(double x, double a_lower, double a_upper, double b_lower, double b_upper);
+    static double scaleToRange(double x, double src_lower, double src_upper, double dest_lower, double dest_upper);
 };
