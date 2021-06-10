@@ -39,8 +39,6 @@ void Ruler::setRange(double lower, double upper)
     lowerLimit = lower;
     upperLimit = upper;
 
-    if (drawingArea == nullptr) { return; }
-
     calculateTickIntervals();
 
     // We need to manually trigger the widget to redraw
@@ -69,8 +67,6 @@ void Ruler::calculateTickIntervals()
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
 {
     auto *ruler = static_cast<Ruler *>(data);
-
-    if (ruler->drawingArea == nullptr) { return FALSE; }
 
     double width = ruler->width;
     double height = ruler->height;
@@ -174,8 +170,6 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper
 void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle * /*allocation*/, gpointer data)
 {
     auto *ruler = static_cast<Ruler *>(data);
-
-    if (ruler->drawingArea == nullptr) { return; }
 
     ruler->width = gtk_widget_get_allocated_width(widget);
     ruler->height = gtk_widget_get_allocated_height(widget);
