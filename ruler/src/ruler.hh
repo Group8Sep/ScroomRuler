@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtk/gtk.h>
-#include <boost/smart_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
 /**
  * This class draws a ruler to a GtkDrawingArea.
