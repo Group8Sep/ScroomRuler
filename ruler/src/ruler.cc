@@ -25,7 +25,7 @@ Ruler::Ruler(Ruler::Orientation orientation, GtkWidget* drawingAreaWidget)
     g_signal_connect(drawingAreaWidget, "draw", G_CALLBACK(drawCallback), this);
     g_signal_connect(drawingAreaWidget, "size-allocate", G_CALLBACK(sizeAllocateCallback), this);
     // Calculate tick intervals and spacing
-    update();
+    calculateTickIntervals();
 }
 
 Ruler::~Ruler()
@@ -41,7 +41,7 @@ void Ruler::setRange(double lower, double upper)
 
     if (drawingArea == nullptr) { return; }
 
-    update();
+    calculateTickIntervals();
 
     // We need to manually trigger the widget to redraw
     gtk_widget_queue_draw(drawingArea);
@@ -57,7 +57,7 @@ double Ruler::getUpperLimit() const
     return upperLimit;
 }
 
-void Ruler::update()
+void Ruler::calculateTickIntervals()
 {
     if (drawingArea == nullptr) { return; }
 
@@ -80,17 +80,14 @@ void Ruler::update()
 
     while (true)
     {
-        if (VALID_INTERVALS.at(intervalIndex) != 1 || intervalN != 0)
-        {
-            majorInterval = VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN);
+        majorInterval = VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN);
 
-            // Calculate the drawn size for this interval by mapping from the ruler range
-            // to the ruler size on the screen
-            segmentScreenSize = floor(RulerCalculations::scaleToRange(majorInterval, 0.0, upperLimit - lowerLimit, 0.0, DRAW_AREA_SIZE));
+        // Calculate the drawn size for this interval by mapping from the ruler range
+        // to the ruler size on the screen
+        segmentScreenSize = floor(RulerCalculations::scaleToRange(majorInterval, 0.0, upperLimit - lowerLimit, 0.0, DRAW_AREA_SIZE));
 
-            // If we've found a segment of appropriate size, we can stop
-            if (segmentScreenSize >= MIN_SEGMENT_SIZE) { break; }
-        }
+        // If we've found a segment of appropriate size, we can stop
+        if (segmentScreenSize >= MIN_SEGMENT_SIZE) { break; }
 
         // Try the next interval
         intervalIndex++;
@@ -218,7 +215,7 @@ void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle * /*allocation*
     ruler->width = gtk_widget_get_allocated_width(widget);
     ruler->height = gtk_widget_get_allocated_height(widget);
 
-    ruler->update();
+    ruler->calculateTickIntervals();
 }
 
 void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, const std::string &label)

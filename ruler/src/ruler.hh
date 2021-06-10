@@ -148,9 +148,9 @@ private:
     static void sizeAllocateCallback(GtkWidget *widget, GdkRectangle *allocation, gpointer data);
 
     /**
-     * Updates the internal state of the ruler, given the current range and dimensions.
+     * Calculates an appropriate interval between major ticks, given the current range and dimensions.
      */
-    void update();
+    void calculateTickIntervals();
 
     /**
      * Draws the tick marks of the ruler for a given subset of the range.
