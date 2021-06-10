@@ -136,15 +136,7 @@ void Ruler::draw(GtkWidget *widget, cairo_t *cr)
     cairo_set_line_width(cr, Ruler::LINE_WIDTH);
 
     // Calculate the line length for the major ticks given the size of the ruler
-    double lineLength = NAN;
-    if (orientation == HORIZONTAL)
-    {
-        lineLength = Ruler::MAJOR_TICK_LENGTH * height;
-    }
-    else
-    {
-        lineLength = Ruler::MAJOR_TICK_LENGTH * width;
-    }
+    double lineLength = (orientation == HORIZONTAL) ? MAJOR_TICK_LENGTH * height : MAJOR_TICK_LENGTH * width;
 
     // Draw positive side of the ruler
     if (upperLimit > 0) // If part of the range is indeed positive
