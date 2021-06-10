@@ -55,6 +55,16 @@ double Ruler::getUpperLimit() const
     return upperLimit;
 }
 
+void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle * /*allocation*/, gpointer data)
+{
+    auto *ruler = static_cast<Ruler *>(data);
+
+    ruler->width = gtk_widget_get_allocated_width(widget);
+    ruler->height = gtk_widget_get_allocated_height(widget);
+
+    ruler->calculateTickIntervals();
+}
+
 void Ruler::calculateTickIntervals()
 {
     const double ALLOCATED_SIZE = (orientation == HORIZONTAL) ? width : height;
@@ -67,19 +77,22 @@ void Ruler::calculateTickIntervals()
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
 {
     auto *ruler = static_cast<Ruler *>(data);
+    ruler->draw(widget, cr);
 
-    double width = ruler->width;
-    double height = ruler->height;
+    return FALSE;
+}
 
+void Ruler::draw(GtkWidget *widget, cairo_t *cr)
+{
     // Draw background
     GtkStyleContext *context = gtk_widget_get_style_context(widget);
-    gtk_render_background(context, cr, 0, 0, ruler->width, ruler->height);
+    gtk_render_background(context, cr, 0, 0, width, height);
 
     // Draw outline along left and right sides and along the bottom
-    gdk_cairo_set_source_rgba(cr, &(ruler->lineColor));
+    gdk_cairo_set_source_rgba(cr, &lineColor);
 
     cairo_set_line_width(cr, Ruler::LINE_WIDTH);
-    if (ruler->orientation == HORIZONTAL)
+    if (orientation == HORIZONTAL)
     {
         cairo_move_to(cr, LINE_COORD_OFFSET, 0);
         cairo_line_to(cr, LINE_COORD_OFFSET, height);
@@ -111,7 +124,7 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     // Calculate the line length for the major ticks given the size of the ruler
     double lineLength = NAN;
-    if (ruler->orientation == HORIZONTAL)
+    if (orientation == HORIZONTAL)
     {
         lineLength = Ruler::MAJOR_TICK_LENGTH * height;
     }
@@ -121,20 +134,18 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
     }
 
     // Draw positive side of the ruler
-    if (ruler->upperLimit > 0) // If part of the range is indeed positive
+    if (upperLimit > 0) // If part of the range is indeed positive
     {
         // Draw the range [max(0, lowerLimit), upperLimit]
-        ruler->drawTicks(cr, std::max(0.0, ruler->lowerLimit), ruler->upperLimit, true, lineLength);
+        drawTicks(cr, std::max(0.0, lowerLimit), upperLimit, true, lineLength);
     }
 
     // Draw negative side of the ruler from upper to lower
-    if (ruler->lowerLimit < 0) // If part of the range is indeed negative
+    if (lowerLimit < 0) // If part of the range is indeed negative
     {
         // Draw the range [lowerLimit, min(0, lowerLimit)]
-        ruler->drawTicks(cr, ruler->lowerLimit, std::min(0.0, ruler->upperLimit), false, lineLength);
+        drawTicks(cr, lowerLimit, std::min(0.0, upperLimit), false, lineLength);
     }
-
-    return FALSE;
 }
 
 void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength)
@@ -165,16 +176,6 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper
             t -= majorInterval;
         }
     }
-}
-
-void Ruler::sizeAllocateCallback(GtkWidget *widget, GdkRectangle * /*allocation*/, gpointer data)
-{
-    auto *ruler = static_cast<Ruler *>(data);
-
-    ruler->width = gtk_widget_get_allocated_width(widget);
-    ruler->height = gtk_widget_get_allocated_height(widget);
-
-    ruler->calculateTickIntervals();
 }
 
 void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, const std::string &label)

@@ -131,6 +131,13 @@ private:
     static gboolean drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data);
 
     /**
+     * Draws the ruler to the given Cairo context.
+     * @param widget The widget that received the draw signal.
+     * @param cr Cairo context to draw to.
+     */
+    void draw(GtkWidget *widget, cairo_t *cr);
+
+    /**
      * A callback to be connected to a GtkDrawingArea's "size-allocate" signal.
      * Updates the internal state of the ruler when the size of the ruler changes.
      * @param widget The widget that received the signal.
