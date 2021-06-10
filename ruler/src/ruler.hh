@@ -46,6 +46,18 @@ public:
     void setRange(double lower, double upper);
 
     /**
+     * Returns the current lower limit of the ruler's range.
+     * @return The current lower limit of the ruler's range.
+     */
+    double getLowerLimit() const;
+
+    /**
+     * Returns the current upper limit of the ruler's range.
+     * @return The current upper limit of the ruler's range.
+     */
+    double getUpperLimit() const;
+
+    /**
      * Connects signal handlers to a drawing area.
      * @param widget Drawing area to draw the ruler to.
      */
@@ -107,7 +119,11 @@ private:
 
     static constexpr double FONT_SIZE{11};
 
+    /** Offset of tick label from the tick line in pixels. */
     static constexpr double LABEL_OFFSET{4};
+
+    /** Alignment of tick label along the tick line as a fraction of line height. */
+    static constexpr double LABEL_ALIGN{0.7};
 
     /** The length of a tick one "level" down, as a fraction of the line length of the ticks one level up. */
     static constexpr double LINE_MULTIPLIER{0.5};

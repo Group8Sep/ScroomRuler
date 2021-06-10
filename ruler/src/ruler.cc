@@ -60,6 +60,16 @@ void Ruler::setRange(double lower, double upper)
     gtk_widget_queue_draw(drawingArea);
 }
 
+double Ruler::getLowerLimit() const
+{
+    return lowerLimit;
+}
+
+double Ruler::getUpperLimit() const
+{
+    return upperLimit;
+}
+
 void Ruler::update()
 {
     if (drawingArea == nullptr) { return; }
@@ -286,11 +296,11 @@ void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bo
             if (orientation == HORIZONTAL)
             {
                 // Center the text on the line
-                cairo_move_to(cr, lineOrigin + LABEL_OFFSET, height -  LINE_MULTIPLIER* lineLength - LINE_MULTIPLIER * textExtents.y_bearing);
+                cairo_move_to(cr, lineOrigin + LABEL_OFFSET, height - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing);
                 cairo_show_text(cr, label.c_str());
             } else if (orientation == VERTICAL)
             {
-                cairo_move_to(cr, width - LINE_MULTIPLIER * lineLength - LINE_MULTIPLIER * textExtents.y_bearing, lineOrigin - LABEL_OFFSET);
+                cairo_move_to(cr, width - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing, lineOrigin - LABEL_OFFSET);
                 cairo_rotate(cr, -M_PI / 2);
                 cairo_show_text(cr, label.c_str());
             }
