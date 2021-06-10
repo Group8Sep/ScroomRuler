@@ -71,7 +71,7 @@ void Ruler::calculateTickIntervals()
     // Calculate the interval between major ruler ticks
     majorInterval = RulerCalculations::calculateInterval(lowerLimit, upperLimit, ALLOCATED_SIZE);
     // Calculate the spacing in pixels between major ruler ticks
-    segmentScreenSize = RulerCalculations::intervalDrawnSize(majorInterval, lowerLimit, upperLimit, ALLOCATED_SIZE);
+    majorTickSpacing = RulerCalculations::intervalDrawnSize(majorInterval, lowerLimit, upperLimit, ALLOCATED_SIZE);
 }
 
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -84,40 +84,53 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
 
 void Ruler::draw(GtkWidget *widget, cairo_t *cr)
 {
-    // Draw background
+    // Draw background using widget's style context
     GtkStyleContext *context = gtk_widget_get_style_context(widget);
     gtk_render_background(context, cr, 0, 0, width, height);
 
     // Draw outline along left and right sides and along the bottom
     gdk_cairo_set_source_rgba(cr, &lineColor);
-
-    cairo_set_line_width(cr, Ruler::LINE_WIDTH);
+    cairo_set_line_width(cr, LINE_WIDTH);
+    // Cairo integer coordinates map to points halfway between pixels.
+    // We need to offset the coordinates by 0.5 times the line width
+    // to get clear lines
+    double drawOffset = LINE_WIDTH * LINE_COORD_OFFSET;
     if (orientation == HORIZONTAL)
     {
-        cairo_move_to(cr, LINE_COORD_OFFSET, 0);
-        cairo_line_to(cr, LINE_COORD_OFFSET, height);
+        // Draw line along left side of ruler
+        cairo_move_to(cr, drawOffset, 0);
+        cairo_line_to(cr, drawOffset, height);
 
-        cairo_move_to(cr, width - LINE_COORD_OFFSET, 0);
-        cairo_line_to(cr, width - LINE_COORD_OFFSET, height);
+        // Draw line along right side of ruler
+        cairo_move_to(cr, width - drawOffset, 0);
+        cairo_line_to(cr, width - drawOffset, height);
+        // Render both lines
         cairo_stroke(cr);
 
-        cairo_set_line_width(cr, 2 * Ruler::LINE_WIDTH);
-        cairo_move_to(cr, 0, height - LINE_COORD_OFFSET);
-        cairo_line_to(cr, width, height - LINE_COORD_OFFSET);
+        // Draw thicker border along bottom of ruler
+        cairo_set_line_width(cr, 2 * LINE_WIDTH);
+        drawOffset = 2 * LINE_WIDTH * LINE_COORD_OFFSET;
+        cairo_move_to(cr, 0, height - drawOffset);
+        cairo_line_to(cr, width, height - drawOffset);
         cairo_stroke(cr);
     }
     else
     {
-        cairo_move_to(cr, 0, LINE_COORD_OFFSET);
-        cairo_line_to(cr, width, LINE_COORD_OFFSET);
+        // Draw line along top side of ruler
+        cairo_move_to(cr, 0, drawOffset);
+        cairo_line_to(cr, width, drawOffset);
 
-        cairo_move_to(cr, 0, height - LINE_COORD_OFFSET);
-        cairo_line_to(cr, width, height - LINE_COORD_OFFSET);
+        // Draw line along bottom side of ruler
+        cairo_move_to(cr, 0, height - drawOffset);
+        cairo_line_to(cr, width, height - drawOffset);
+        // Render both lines
         cairo_stroke(cr);
 
-        cairo_set_line_width(cr, 2 * Ruler::LINE_WIDTH);
-        cairo_move_to(cr, width - LINE_COORD_OFFSET, 0);
-        cairo_line_to(cr, width - LINE_COORD_OFFSET, height);
+        // Draw thicker border along right of ruler
+        cairo_set_line_width(cr, 2 * LINE_WIDTH);
+        drawOffset = 2 * LINE_WIDTH * LINE_COORD_OFFSET;
+        cairo_move_to(cr, width - drawOffset, 0);
+        cairo_line_to(cr, width - drawOffset, height);
         cairo_stroke(cr);
     }
     cairo_set_line_width(cr, Ruler::LINE_WIDTH);
@@ -150,54 +163,59 @@ void Ruler::draw(GtkWidget *widget, cairo_t *cr)
 
 void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength)
 {
-    double t = lowerToUpper ? lower : upper;
+    // Position in ruler range
+    double pos = lowerToUpper ? lower : upper;
 
     const double DRAW_AREA_ORIGIN = 0;
     // We need to scale to either [0, width] or [0, height] depending
     // on the orientation of the ruler
     const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
 
-    // Move t across range
-    while ((lowerToUpper && t < upper) || (!lowerToUpper && lower < t))
+    // Move pos across range
+    while ((lowerToUpper && pos < upper) || (!lowerToUpper && lower < pos))
     {
-        // Map t from the ruler range to a drawing area position
-        double s = RulerCalculations::scaleToRange(t, lowerLimit, upperLimit, DRAW_AREA_ORIGIN, DRAW_AREA_ORIGIN + DRAW_AREA_SIZE);
+        // Map pos from the ruler range to a drawing area position
+        double s = RulerCalculations::scaleToRange(pos, lowerLimit, upperLimit, DRAW_AREA_ORIGIN, DRAW_AREA_ORIGIN + DRAW_AREA_SIZE);
         // Draw tick for this position
-        drawSingleTick(cr, s, lineLength, true, std::to_string(static_cast<int>(floor(t))));
+        drawSingleTick(cr, s, lineLength, true, std::to_string(static_cast<int>(floor(pos))));
 
         if (lowerToUpper)
         {
-            drawSubTicks(cr, s, s + segmentScreenSize, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            t += majorInterval;
+            drawSubTicks(cr, s, s + majorTickSpacing, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
+            pos += majorInterval;
         }
         else
         {
-            drawSubTicks(cr, s - segmentScreenSize, s, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            t -= majorInterval;
+            drawSubTicks(cr, s - majorTickSpacing, s, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
+            pos -= majorInterval;
         }
     }
 }
 
-void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, const std::string &label)
+void Ruler::drawSingleTick(cairo_t *cr, double linePosition, double lineLength, bool drawLabel, const std::string &label)
 {
     // Draw line
+    cairo_set_line_width(cr, LINE_WIDTH);
+    // Offset the line to get a clear line
+    const double DRAW_OFFSET = LINE_WIDTH * LINE_COORD_OFFSET;
     if (orientation == HORIZONTAL)
     {
-        cairo_set_line_width(cr, LINE_WIDTH);
-        cairo_move_to(cr, lineOrigin - LINE_COORD_OFFSET, height);
-        cairo_line_to(cr, lineOrigin - LINE_COORD_OFFSET, height - lineLength);
-        cairo_stroke(cr);
+        // Draw vertical line
+        cairo_move_to(cr, linePosition + DRAW_OFFSET, height);
+        cairo_line_to(cr, linePosition + DRAW_OFFSET, height - round(lineLength));
     }
     else
     {
-        cairo_set_line_width(cr, LINE_WIDTH);
-        cairo_move_to(cr, width, lineOrigin - LINE_COORD_OFFSET);
-        cairo_line_to(cr, width - lineLength, lineOrigin - LINE_COORD_OFFSET);
-        cairo_stroke(cr);
+        // Draw horizontal line
+        cairo_move_to(cr, width, linePosition + DRAW_OFFSET);
+        cairo_line_to(cr, width - round(lineLength), linePosition + DRAW_OFFSET);
     }
+    cairo_stroke(cr);
 
+    // We'll be modifying the transformation matrix so
+    // we save the current one to restore later
     cairo_save(cr);
-    if (drawLabel)
+    if (drawLabel) // Draw the tick label
     {
         // Set text font and size
         cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
@@ -206,17 +224,17 @@ void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bo
         cairo_text_extents_t textExtents;
         cairo_text_extents(cr, label.c_str(), &textExtents);
         // Draw the label if there's enough room
-        if (textExtents.x_advance < segmentScreenSize)
+        if (textExtents.x_advance < majorTickSpacing)
         {
             if (orientation == HORIZONTAL)
             {
                 // Center the text on the line
-                cairo_move_to(cr, lineOrigin + LABEL_OFFSET, height - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing);
+                cairo_move_to(cr, linePosition + LABEL_OFFSET, height - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing);
                 cairo_show_text(cr, label.c_str());
             }
             else
             {
-                cairo_move_to(cr, width - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing, lineOrigin - LABEL_OFFSET);
+                cairo_move_to(cr, width - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing, linePosition - LABEL_OFFSET);
                 cairo_rotate(cr, -M_PI / 2);
                 cairo_show_text(cr, label.c_str());
             }
@@ -227,7 +245,6 @@ void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bo
 
 void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lowerToUpper)
 {
-
     // We don't need to divide the segment any further so return
     if (depth >= SUBTICK_SEGMENTS.size()) { return; }
 
@@ -241,22 +258,30 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
     const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
     const double limit = lowerToUpper ? DRAW_AREA_SIZE : 0;
 
-    // Position to draw tick at
-    double s = lowerToUpper ? lower : upper;
+    // Position along the ruler to draw tick at
+    double tick = 0;
+    double pos = lowerToUpper ? lower : upper;
 
-    while ((lowerToUpper && s < upper && s < limit) || (!lowerToUpper && lower < s && limit < s))
+    // Draw at most (numSegments - 1) ticks, while not exceeding the limit
+    while (tick < numSegments && ((lowerToUpper && pos < limit) || (!lowerToUpper && limit < pos)))
     {
-        drawSingleTick(cr, s, lineLength, false, "");
+        // We don't want to draw the tick for tick == 0, because
+        // we would end up drawing over other ticks
+        if (tick != 0)
+        {
+            drawSingleTick(cr, pos, lineLength, false, "");
+        }
+        tick++;
         if (lowerToUpper)
         {
             // Draw ticks at level below
-            drawSubTicks(cr, s, s + interval, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            s += interval;
+            drawSubTicks(cr, pos, pos + interval, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
+            pos += interval;
         }
         else
         {
-            drawSubTicks(cr, s - interval, s, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            s -= interval;
+            drawSubTicks(cr, pos - interval, pos, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
+            pos -= interval;
         }
     }
 }

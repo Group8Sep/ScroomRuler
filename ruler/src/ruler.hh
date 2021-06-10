@@ -81,7 +81,7 @@ private:
     double majorInterval{1};
 
     /** The space between major ticks when drawn. */
-    int segmentScreenSize{};
+    int majorTickSpacing{};
 
     // ==== DRAWING PROPERTIES ====
 
@@ -104,7 +104,7 @@ private:
     static constexpr double LABEL_ALIGN{0.7};
 
     /** The length of a tick one "level" down, as a fraction of the line length of the ticks one level up. */
-    static constexpr double LINE_MULTIPLIER{0.5};
+    static constexpr double LINE_MULTIPLIER{0.6};
 
     GdkRGBA lineColor{0, 0, 0, 1};
 
@@ -164,12 +164,12 @@ private:
     /**
      * Draws a single tick, taking into account the ruler's orientation.
      * @param cr Cairo context to draw to.
-     * @param lineOrigin The point at which to draw the line.
+     * @param linePosition The position of the line along the ruler.
      * @param lineLength Length of the line in pixels.
      * @param drawLabel True if a label should be drawn to the right/top of the line.
      * @param label The label to draw if \p drawLabel is true.
      */
-    void drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bool drawLabel, const std::string &label);
+    void drawSingleTick(cairo_t *cr, double linePosition, double lineLength, bool drawLabel, const std::string &label);
 
     /**
      * Draws the smaller ticks in between the major ticks.
