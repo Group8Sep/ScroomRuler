@@ -75,26 +75,18 @@ void Ruler::update()
     const int INTERVAL_BASE = 10;
     int intervalN = 0;
 
+    // We check versus the width or height depending on orientation
+    const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
+
     while (true)
     {
         if (VALID_INTERVALS.at(intervalIndex) != 1 || intervalN != 0)
         {
             majorInterval = VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN);
 
-            // We check versus the width or height depending on orientation
-            double rulerSize = NAN;
-            if (orientation == HORIZONTAL)
-            {
-                rulerSize = width;
-            }
-            else
-            {
-                rulerSize = height;
-            }
             // Calculate the drawn size for this interval by mapping from the ruler range
             // to the ruler size on the screen
-            segmentScreenSize = floor(
-                    RulerCalculations::scaleToRange(majorInterval, 0.0, upperLimit - lowerLimit, 0.0, rulerSize));
+            segmentScreenSize = floor(RulerCalculations::scaleToRange(majorInterval, 0.0, upperLimit - lowerLimit, 0.0, DRAW_AREA_SIZE));
 
             // If we've found a segment of appropriate size, we can stop
             if (segmentScreenSize >= MIN_SEGMENT_SIZE) { break; }
@@ -142,7 +134,8 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_move_to(cr, 0, height - LINE_COORD_OFFSET);
         cairo_line_to(cr, width, height - LINE_COORD_OFFSET);
         cairo_stroke(cr);
-    } else if (ruler->orientation == VERTICAL)
+    }
+    else
     {
         cairo_move_to(cr, 0, LINE_COORD_OFFSET);
         cairo_line_to(cr, width, LINE_COORD_OFFSET);
@@ -188,33 +181,18 @@ gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
 
 void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength)
 {
-    double t = NAN; // Position in ruler range
-    if (lowerToUpper)
-    {
-        t = lower;
-    }
-    else
-    {
-        t = upper;
-    }
+    double t = lowerToUpper ? lower : upper;
 
-    double origin = NAN;
-    double size = NAN;
-    if (orientation == HORIZONTAL)
-    {
-        origin = 0;
-        size = width;
-    } else if (orientation == VERTICAL)
-    {
-        origin = 0;
-        size = height;
-    }
+    const double DRAW_AREA_ORIGIN = 0;
+    // We need to scale to either [0, width] or [0, height] depending
+    // on the orientation of the ruler
+    const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
 
     // Move t across range
     while ((lowerToUpper && t < upper) || (!lowerToUpper && lower < t))
     {
         // Map t from the ruler range to a drawing area position
-        double s = RulerCalculations::scaleToRange(t, lowerLimit, upperLimit, origin, origin + size);
+        double s = RulerCalculations::scaleToRange(t, lowerLimit, upperLimit, DRAW_AREA_ORIGIN, DRAW_AREA_ORIGIN + DRAW_AREA_SIZE);
         // Draw tick for this position
         drawSingleTick(cr, s, lineLength, true, std::to_string(static_cast<int>(floor(t))));
 
@@ -222,7 +200,8 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper
         {
             drawSubTicks(cr, s, s + segmentScreenSize, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
             t += majorInterval;
-        } else
+        }
+        else
         {
             drawSubTicks(cr, s - segmentScreenSize, s, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
             t -= majorInterval;
@@ -252,7 +231,7 @@ void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bo
         cairo_line_to(cr, lineOrigin - LINE_COORD_OFFSET, height - lineLength);
         cairo_stroke(cr);
     }
-    else if (orientation == VERTICAL)
+    else
     {
         cairo_set_line_width(cr, LINE_WIDTH);
         cairo_move_to(cr, width, lineOrigin - LINE_COORD_OFFSET);
@@ -277,7 +256,8 @@ void Ruler::drawSingleTick(cairo_t *cr, double lineOrigin, double lineLength, bo
                 // Center the text on the line
                 cairo_move_to(cr, lineOrigin + LABEL_OFFSET, height - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing);
                 cairo_show_text(cr, label.c_str());
-            } else if (orientation == VERTICAL)
+            }
+            else
             {
                 cairo_move_to(cr, width - LABEL_ALIGN * lineLength - LINE_MULTIPLIER * textExtents.y_bearing, lineOrigin - LABEL_OFFSET);
                 cairo_rotate(cr, -M_PI / 2);
@@ -301,38 +281,11 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
 
     // We draw from lower->upper / upper->lower, but in the process, we might be exceeding
     // the ruler area, so we also check that we're still inside the drawing area
-    double limit = NAN;
-    if (orientation == HORIZONTAL)
-    {
-        if (lowerToUpper)
-        {
-            limit = width;
-        }
-        else
-        {
-            limit = 0;
-        }
-    } else if (orientation == VERTICAL)
-    {
-        if (lowerToUpper)
-        {
-            limit = height;
-        }
-        else
-        {
-            limit = 0;
-        }
-    }
+    const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
+    const double limit = lowerToUpper ? DRAW_AREA_SIZE : 0;
 
-    double s = NAN; // Position to draw tick at
-    if (lowerToUpper)
-    {
-        s = lower;
-    }
-    else
-    {
-        s = upper;
-    }
+    // Position to draw tick at
+    double s = lowerToUpper ? lower : upper;
 
     while ((lowerToUpper && s < upper && s < limit) || (!lowerToUpper && lower < s && limit < s))
     {
@@ -342,7 +295,8 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
             // Draw ticks at level below
             drawSubTicks(cr, s, s + interval, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
             s += interval;
-        } else
+        }
+        else
         {
             drawSubTicks(cr, s - interval, s, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
             s -= interval;
