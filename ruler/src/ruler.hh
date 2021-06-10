@@ -59,17 +59,6 @@ private:
     static constexpr double DEFAULT_LOWER{0};
     static constexpr double DEFAULT_UPPER{10};
 
-    /** The minimum space between major ticks. */
-    static constexpr int MIN_SEGMENT_SIZE{50};
-
-    /** The minimum space between sub-ticks. */
-    static constexpr int MIN_SPACE_SUBTICKS{5};
-
-    /** Valid intervals between major ticks. */
-    constexpr static std::array<double, 5> VALID_INTERVALS{
-            1, 2, 5, 10, 25
-    };
-
     /**
      * Each space between major ticks is split into 5 smaller segments and
      * those segments are split into 2. (Assuming there's enough space.)
@@ -102,6 +91,9 @@ private:
      * direction, we can draw clear lines.
      */
     static constexpr double LINE_COORD_OFFSET{0.5};
+
+    /** The minimum space between sub-ticks. */
+    static constexpr int MIN_SPACE_SUBTICKS{5};
 
     static constexpr double FONT_SIZE{11};
 
@@ -189,7 +181,35 @@ private:
  */
 class RulerCalculations
 {
+private:
+    /** The minimum space between major ticks. */
+    static constexpr int MIN_SPACE_MAJORTICKS{80};
+
+    /** Valid intervals between major ticks. */
+    constexpr static std::array<double, 5> VALID_INTERVALS{
+            1, 2, 5, 10, 25
+    };
+
 public:
+    /**
+     * Calculates an appropriate interval between major ticks on a ruler.
+     * @param lower Lower limit of the ruler range.
+     * @param upper Upper limit of the ruler range.
+     * @param allocatedSize The allocated width/height in pixels for the ruler.
+     * @return The interval between ticks.
+     */
+    static double calculateInterval(double lower, double upper, double allocatedSize);
+
+    /**
+     * Calculates the spacing in pixels between tick marks for a given interval.
+     * @param interval The interval to calculate the spacing for.
+     * @param lower Lower limit of the ruler range.
+     * @param upper Upper limit of the ruler range.
+     * @param allocatedSize The allocated width/height in pixels for the ruler.
+     * @return The spacing in pixels between tick marks for a given interval.
+     */
+    static int intervalDrawnSize(double interval, double lower, double upper, double allocatedSize);
+
     /**
      * Scales a number \p x in the range [\p src_lower, \p src_upper] to the range [\p dest_lower, \p dest_upper].
      * Used to scale from the ruler range to the drawing space.

@@ -59,50 +59,15 @@ double Ruler::getUpperLimit() const
 
 void Ruler::calculateTickIntervals()
 {
-    if (drawingArea == nullptr) { return; }
-
-    // We need to calculate the distance between the largest ticks on the ruler
-    // We will try each interval sequentially until we find an interval which
-    // will produce segments of a large enough width/height when drawn
-
-    // Once we have the distance between the major ticks (the size of the segments)
-    // each segment is then divided into 5 parts assuming there's enough space
-    // and each of those parts is again divided into 2, again, assuming there's enough space
-
-    // Index in the ruler's VALID_INTERVALS array
-    int intervalIndex = 0;
-    // Each interval is multiplied by 10 raised to the power n
-    const int INTERVAL_BASE = 10;
-    int intervalN = 0;
-
-    // We check versus the width or height depending on orientation
-    const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
-
-    while (true)
-    {
-        majorInterval = VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN);
-
-        // Calculate the drawn size for this interval by mapping from the ruler range
-        // to the ruler size on the screen
-        segmentScreenSize = floor(RulerCalculations::scaleToRange(majorInterval, 0.0, upperLimit - lowerLimit, 0.0, DRAW_AREA_SIZE));
-
-        // If we've found a segment of appropriate size, we can stop
-        if (segmentScreenSize >= MIN_SEGMENT_SIZE) { break; }
-
-        // Try the next interval
-        intervalIndex++;
-        if (intervalIndex == VALID_INTERVALS.size())
-        {
-            // We tried all intervals for the current n
-            intervalIndex = 0;
-            intervalN++;
-        }
-    }
+    const double ALLOCATED_SIZE = (orientation == HORIZONTAL) ? width : height;
+    // Calculate the interval between major ruler ticks
+    majorInterval = RulerCalculations::calculateInterval(lowerLimit, upperLimit, ALLOCATED_SIZE);
+    // Calculate the spacing in pixels between major ruler ticks
+    segmentScreenSize = RulerCalculations::intervalDrawnSize(majorInterval, lowerLimit, upperLimit, ALLOCATED_SIZE);
 }
 
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
 {
-
     auto *ruler = static_cast<Ruler *>(data);
 
     if (ruler->drawingArea == nullptr) { return FALSE; }
@@ -308,4 +273,49 @@ double RulerCalculations::scaleToRange(double x, double src_lower, double src_up
     double scale = dest_size / src_size;
 
     return dest_lower + round(scale * (x - src_lower));
+}
+
+double RulerCalculations::calculateInterval(double lower, double upper, double allocatedSize)
+{
+    // We need to calculate the distance between the largest ticks on the ruler
+    // We will try each interval x * 10^n for x in VALID_INTERVALS and integer n >= 0
+    // from smallest to largest until we find an interval which will produce a
+    // spacing of a large enough width/height when drawn
+
+    // Index in the ruler's VALID_INTERVALS array
+    int intervalIndex = 0;
+    // Each interval is multiplied by 10 raised to a power n
+    const int INTERVAL_BASE = 10;
+    int intervalN = 0;
+
+    // The interval to be returned
+    double interval = 1;
+
+    while (true)
+    {
+        interval = VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN);
+
+        // Calculate the drawn size for this interval by mapping from the ruler range
+        // to the ruler size on the screen
+        double spacing = intervalDrawnSize(interval, lower, upper, allocatedSize);
+        // If we've found a segment of appropriate size, we can stop
+        if (spacing >= MIN_SPACE_MAJORTICKS) { break; }
+
+        // Otherwise, try the next interval
+        intervalIndex++;
+        if (intervalIndex == VALID_INTERVALS.size())
+        {
+            // We tried all intervals for the current n, increment n
+            intervalIndex = 0;
+            intervalN++;
+        }
+    }
+
+    return interval;
+}
+
+int RulerCalculations::intervalDrawnSize(double interval, double lower, double upper, double allocatedSize)
+{
+    const double RANGE_SIZE = upper - lower;
+    return static_cast<int>(round((allocatedSize / RANGE_SIZE) * interval));
 }
