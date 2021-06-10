@@ -7,44 +7,31 @@
 
 Ruler::Ptr Ruler::create(Ruler::Orientation orientation, GtkWidget *drawingArea)
 {
-    Ruler::Ptr ruler{new Ruler(orientation)};
-    if (drawingArea != nullptr)
-    {
-        ruler->setDrawingArea(drawingArea);
-    }
-    ruler->update();
+    Ruler::Ptr ruler{new Ruler(orientation, drawingArea)};
     return ruler;
 }
 
-Ruler::Ruler(Ruler::Orientation orientation)
+Ruler::Ruler(Ruler::Orientation orientation, GtkWidget* drawingAreaWidget)
         : orientation{orientation}
+        , drawingArea{drawingAreaWidget}
+        , width{gtk_widget_get_allocated_width(drawingAreaWidget)}
+        , height{gtk_widget_get_allocated_height(drawingAreaWidget)}
 {
+    // [TODO] Scroom contains a require() macro.
+    //  We'll need to add this when we move this code to Scroom.
+    //require(drawingArea != nullptr);
+
+    // Connect signal handlers
+    g_signal_connect(drawingAreaWidget, "draw", G_CALLBACK(drawCallback), this);
+    g_signal_connect(drawingAreaWidget, "size-allocate", G_CALLBACK(sizeAllocateCallback), this);
+    // Calculate tick intervals and spacing
+    update();
 }
 
 Ruler::~Ruler()
 {
-    unregisterDrawingArea();
-}
-
-void Ruler::setDrawingArea(GtkWidget *widget)
-{
-    unregisterDrawingArea();
-    drawingArea = widget;
-
-    width = gtk_widget_get_allocated_width(widget);
-    height = gtk_widget_get_allocated_height(widget);
-
-    // Register callbacks
-    g_signal_connect(widget, "draw", G_CALLBACK(drawCallback), this);
-    g_signal_connect(widget, "size-allocate", G_CALLBACK(sizeAllocateCallback), this);
-}
-
-void Ruler::unregisterDrawingArea()
-{
-    if (drawingArea == nullptr) { return; }
-
+    // Disconnect all signal handlers for this object from the drawing area
     g_signal_handlers_disconnect_by_data(drawingArea, this);
-    drawingArea = nullptr;
 }
 
 void Ruler::setRange(double lower, double upper)

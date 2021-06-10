@@ -3,11 +3,6 @@
 #include <gtk/gtk.h>
 #include <boost/smart_ptr.hpp>
 
-namespace RulerUnitTest
-{
-    struct RulerTester;
-}
-
 /**
  * This class draws a ruler to a GtkDrawingArea.
  * It is intended as a replacement for the old GTK2 ruler widget and is written
@@ -49,24 +44,15 @@ public:
      * Returns the current lower limit of the ruler's range.
      * @return The current lower limit of the ruler's range.
      */
-    double getLowerLimit() const;
+    [[nodiscard]] double getLowerLimit() const;
 
     /**
      * Returns the current upper limit of the ruler's range.
      * @return The current upper limit of the ruler's range.
      */
-    double getUpperLimit() const;
-
-    /**
-     * Connects signal handlers to a drawing area.
-     * @param widget Drawing area to draw the ruler to.
-     */
-    void setDrawingArea(GtkWidget *widget);
+    [[nodiscard]] double getUpperLimit() const;
 
 private:
-
-    // Declare a friend struct to test private methods
-    friend struct RulerUnitTest::RulerTester;
 
     GtkWidget *drawingArea{};
 
@@ -98,9 +84,9 @@ private:
     double lowerLimit{DEFAULT_LOWER};
     double upperLimit{DEFAULT_UPPER};
 
-    // The width and height of the drawing area widget.
-    double width{};
-    double height{};
+    // The allocated width and height for the drawing area widget.
+    int width{};
+    int height{};
 
     /** The chosen interval between major ticks. */
     double majorInterval{1};
@@ -136,14 +122,11 @@ private:
     static constexpr double MAJOR_TICK_LENGTH{0.8};
 
     /**
-     * Creates a ruler.
+     * Creates a Ruler.
+     * @param orientation The orientation of the ruler.
+     * @param drawingArea The GtkDrawingArea to draw the ruler to.
      */
-    explicit Ruler(Orientation orientation);
-
-    /**
-     * Disconnects signal handlers from the current drawing area, if one is set.
-     */
-    void unregisterDrawingArea();
+    Ruler(Orientation orientation, GtkWidget* drawingArea);
 
     /**
      * A callback to be connected to a GtkDrawingArea's "draw" signal.
