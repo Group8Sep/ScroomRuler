@@ -8,6 +8,7 @@ BOOST_AUTO_TEST_SUITE(Ruler_Tests)
 
 void checkSignals(const Ruler::Ptr& ruler, GtkWidget* drawingArea)
 {
+    // [TODO] Also check correct function is connected!
     auto mask = static_cast<GSignalMatchType>(G_SIGNAL_MATCH_ID | G_SIGNAL_MATCH_DATA);
     guint drawID = g_signal_lookup("draw", GTK_TYPE_DRAWING_AREA);
     guint sizeAllocateID = g_signal_lookup("size-allocate", GTK_TYPE_DRAWING_AREA);
