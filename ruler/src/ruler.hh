@@ -215,7 +215,7 @@ public:
      * @param allocatedSize The allocated width/height in pixels for the ruler.
      * @return The spacing in pixels between tick marks for a given interval.
      */
-    static int intervalDrawnSize(double interval, double lower, double upper, double allocatedSize);
+    static int intervalPixelSpacing(double interval, double lower, double upper, double allocatedSize);
 
     /**
      * Scales a number \p x in the range [\p src_lower, \p src_upper] to the range [\p dest_lower, \p dest_upper].

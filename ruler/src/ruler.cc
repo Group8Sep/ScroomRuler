@@ -71,7 +71,7 @@ void Ruler::calculateTickIntervals()
     // Calculate the interval between major ruler ticks
     majorInterval = RulerCalculations::calculateInterval(lowerLimit, upperLimit, ALLOCATED_SIZE);
     // Calculate the spacing in pixels between major ruler ticks
-    majorTickSpacing = RulerCalculations::intervalDrawnSize(majorInterval, lowerLimit, upperLimit, ALLOCATED_SIZE);
+    majorTickSpacing = RulerCalculations::intervalPixelSpacing(majorInterval, lowerLimit, upperLimit, ALLOCATED_SIZE);
 }
 
 gboolean Ruler::drawCallback(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -138,19 +138,11 @@ void Ruler::draw(GtkWidget *widget, cairo_t *cr)
     // Calculate the line length for the major ticks given the size of the ruler
     double lineLength = (orientation == HORIZONTAL) ? MAJOR_TICK_LENGTH * height : MAJOR_TICK_LENGTH * width;
 
-    // Draw positive side of the ruler
-    if (upperLimit > 0) // If part of the range is indeed positive
-    {
-        // Draw the range [max(0, lowerLimit), upperLimit]
-        drawTicks(cr, std::max(0.0, lowerLimit), upperLimit, true, lineLength);
-    }
+    // Draw the range [0, upperLimit]
+    drawTicks(cr, 0.0, upperLimit, true, lineLength);
 
-    // Draw negative side of the ruler from upper to lower
-    if (lowerLimit < 0) // If part of the range is indeed negative
-    {
-        // Draw the range [lowerLimit, min(0, lowerLimit)]
-        drawTicks(cr, lowerLimit, std::min(0.0, upperLimit), false, lineLength);
-    }
+    // Draw the range [lowerLimit, 0]
+    drawTicks(cr, lowerLimit, 0.0, false, lineLength);
 }
 
 void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength)
@@ -309,7 +301,7 @@ double RulerCalculations::calculateInterval(double lower, double upper, double a
 
         // Calculate the drawn size for this interval by mapping from the ruler range
         // to the ruler size on the screen
-        double spacing = intervalDrawnSize(interval, lower, upper, allocatedSize);
+        double spacing = intervalPixelSpacing(interval, lower, upper, allocatedSize);
         // If we've found a segment of appropriate size, we can stop
         if (spacing >= MIN_SPACE_MAJORTICKS) { break; }
 
@@ -326,7 +318,7 @@ double RulerCalculations::calculateInterval(double lower, double upper, double a
     return interval;
 }
 
-int RulerCalculations::intervalDrawnSize(double interval, double lower, double upper, double allocatedSize)
+int RulerCalculations::intervalPixelSpacing(double interval, double lower, double upper, double allocatedSize)
 {
     const double RANGE_SIZE = upper - lower;
     return static_cast<int>(round((allocatedSize / RANGE_SIZE) * interval));
