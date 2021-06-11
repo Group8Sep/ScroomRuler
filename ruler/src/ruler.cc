@@ -135,6 +135,9 @@ void Ruler::draw(GtkWidget *widget, cairo_t *cr)
     }
     cairo_set_line_width(cr, Ruler::LINE_WIDTH);
 
+    // The majorInterval is invalid, don't attempt to draw anything else
+    if (majorInterval <= 0) { return; }
+
     // Calculate the line length for the major ticks given the size of the ruler
     double lineLength = (orientation == HORIZONTAL) ? MAJOR_TICK_LENGTH * height : MAJOR_TICK_LENGTH * width;
 
@@ -279,12 +282,14 @@ double RulerCalculations::scaleToRange(double x, double src_lower, double src_up
     return dest_lower + round(scale * (x - src_lower));
 }
 
-double RulerCalculations::calculateInterval(double lower, double upper, double allocatedSize)
+int RulerCalculations::calculateInterval(double lower, double upper, double allocatedSize)
 {
     // We need to calculate the distance between the largest ticks on the ruler
     // We will try each interval x * 10^n for x in VALID_INTERVALS and integer n >= 0
     // from smallest to largest until we find an interval which will produce a
     // spacing of a large enough width/height when drawn
+
+    if (upper <= lower) { return -1; }
 
     // Index in the ruler's VALID_INTERVALS array
     int intervalIndex = 0;
@@ -293,11 +298,11 @@ double RulerCalculations::calculateInterval(double lower, double upper, double a
     int intervalN = 0;
 
     // The interval to be returned
-    double interval = 1;
+    int interval = 1;
 
     while (true)
     {
-        interval = VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN);
+        interval = floor(VALID_INTERVALS.at(intervalIndex) * pow(INTERVAL_BASE, intervalN));
 
         // Calculate the drawn size for this interval by mapping from the ruler range
         // to the ruler size on the screen

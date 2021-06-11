@@ -35,8 +35,8 @@ public:
 
     /**
      * Sets the range for the ruler to display.
-     * @param lower The lower limit of the range.
-     * @param upper The upper limit of the range.
+     * @param lower Lower limit of the ruler range. Must be strictly less than \p upper.
+     * @param upper Upper limit of the ruler range. Must be strictly greater than \p lower.
      */
     void setRange(double lower, double upper);
 
@@ -193,25 +193,25 @@ private:
     static constexpr int MIN_SPACE_MAJORTICKS{80};
 
     /** Valid intervals between major ticks. */
-    constexpr static std::array<double, 5> VALID_INTERVALS{
+    constexpr static std::array<int, 5> VALID_INTERVALS{
             1, 2, 5, 10, 25
     };
 
 public:
     /**
      * Calculates an appropriate interval between major ticks on a ruler.
-     * @param lower Lower limit of the ruler range.
-     * @param upper Upper limit of the ruler range.
+     * @param lower Lower limit of the ruler range. Must be strictly less than \p upper.
+     * @param upper Upper limit of the ruler range. Must be strictly greater than \p lower.
      * @param allocatedSize The allocated width/height in pixels for the ruler.
-     * @return The interval between ticks.
+     * @return The interval between ticks, or -1 if the given range is invalid.
      */
-    static double calculateInterval(double lower, double upper, double allocatedSize);
+    static int calculateInterval(double lower, double upper, double allocatedSize);
 
     /**
      * Calculates the spacing in pixels between tick marks for a given interval.
      * @param interval The interval to calculate the spacing for.
-     * @param lower Lower limit of the ruler range.
-     * @param upper Upper limit of the ruler range.
+     * @param lower Lower limit of the ruler range. Must be strictly less than \p upper.
+     * @param upper Upper limit of the ruler range. Must be strictly greater than \p lower.
      * @param allocatedSize The allocated width/height in pixels for the ruler.
      * @return The spacing in pixels between tick marks for a given interval.
      */
