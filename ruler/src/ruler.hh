@@ -193,8 +193,8 @@ private:
     static constexpr int MIN_SPACE_MAJORTICKS{80};
 
     /** Valid intervals between major ticks. */
-    constexpr static std::array<int, 5> VALID_INTERVALS{
-            1, 2, 5, 10, 25
+    constexpr static std::array<int, 4> VALID_INTERVALS{
+            1,  5, 10, 25
     };
 
 public:
@@ -213,7 +213,7 @@ public:
      * @param lower Lower limit of the ruler range. Must be strictly less than \p upper.
      * @param upper Upper limit of the ruler range. Must be strictly greater than \p lower.
      * @param allocatedSize The allocated width/height in pixels for the ruler.
-     * @return The spacing in pixels between tick marks for a given interval.
+     * @return The spacing in pixels between tick marks for a given interval, or -1 if the given range is invalid.
      */
     static int intervalPixelSpacing(double interval, double lower, double upper, double allocatedSize);
 

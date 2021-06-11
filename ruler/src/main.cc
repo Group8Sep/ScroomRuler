@@ -34,7 +34,9 @@ main (int   argc,
     double upper = 27.82;
     hruler->setRange(lower, upper);
 
-    std::cout << RulerCalculations::calculateInterval(lower, upper, 540) << '\n';
+    double size = 1920;
+
+    std::cout << RulerCalculations::intervalPixelSpacing() << '\n';
     std::cout << RulerCalculations::calculateInterval(lower, upper, 1920) << '\n';
 
 //    vRulerArea = gtk_builder_get_object(builder, "vrulerarea");
