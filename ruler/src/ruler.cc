@@ -1,6 +1,9 @@
+#include "ruler.hh"
+
 #include <cmath>
 #include <iostream>
-#include "ruler.hh"
+
+//#include <scroom/assertions.hh>
 
 ////////////////////////////////////////////////////////////////////////
 // Ruler
@@ -12,8 +15,8 @@ Ruler::Ptr Ruler::create(Ruler::Orientation orientation, GtkWidget *drawingArea)
 }
 
 Ruler::Ruler(Ruler::Orientation orientation, GtkWidget* drawingAreaWidget)
-        : orientation{orientation}
-        , drawingArea{drawingAreaWidget}
+        : drawingArea{drawingAreaWidget}
+        , orientation{orientation}
         , width{gtk_widget_get_allocated_width(drawingAreaWidget)}
         , height{gtk_widget_get_allocated_height(drawingAreaWidget)}
 {
@@ -228,7 +231,7 @@ void Ruler::drawSingleTick(cairo_t *cr, double linePosition, double lineLength, 
 void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength)
 {
     // We don't need to divide the segment any further so return
-    if (depth >= SUBTICK_SEGMENTS.size()) { return; }
+    if (static_cast<unsigned int>(depth) >= SUBTICK_SEGMENTS.size()) { return; }
 
     int numSegments = SUBTICK_SEGMENTS.at(depth);
     double interval = abs(upper - lower) / numSegments;
