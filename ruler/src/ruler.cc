@@ -20,9 +20,7 @@ Ruler::Ruler(Ruler::Orientation orientation, GtkWidget* drawingAreaWidget)
         , width{gtk_widget_get_allocated_width(drawingAreaWidget)}
         , height{gtk_widget_get_allocated_height(drawingAreaWidget)}
 {
-    // [TODO] Scroom contains a require() macro.
-    //  We'll need to add this when we move this code to Scroom.
-    //require(drawingArea != nullptr);
+    //require(drawingArea != nullptr); // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 
     // Connect signal handlers
     g_signal_connect(drawingAreaWidget, "draw", G_CALLBACK(drawCallback), this); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
@@ -175,27 +173,28 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, double lineLength
 
 void Ruler::drawSingleTick(cairo_t *cr, double linePosition, double lineLength, bool drawLabel, const std::string &label)
 {
-    // This line won't be visible, don't draw it
     const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
-    if (linePosition < 0 || linePosition > DRAW_AREA_SIZE) { return; }
-
-    // Draw line
-    cairo_set_line_width(cr, LINE_WIDTH);
-    // Offset the line to get a clear line
-    const double DRAW_OFFSET = LINE_WIDTH * LINE_COORD_OFFSET;
-    if (orientation == HORIZONTAL)
+    // Draw the line if is within the drawing area
+    if (0 < linePosition && linePosition < DRAW_AREA_SIZE)
     {
+      // Draw line
+      cairo_set_line_width(cr, LINE_WIDTH);
+      // Offset the line to get a clear line
+      const double DRAW_OFFSET = LINE_WIDTH * LINE_COORD_OFFSET;
+      if(orientation == HORIZONTAL)
+      {
         // Draw vertical line
         cairo_move_to(cr, linePosition + DRAW_OFFSET, height);
         cairo_line_to(cr, linePosition + DRAW_OFFSET, height - round(lineLength));
-    }
-    else
-    {
+      }
+      else
+      {
         // Draw horizontal line
         cairo_move_to(cr, width, linePosition + DRAW_OFFSET);
         cairo_line_to(cr, width - round(lineLength), linePosition + DRAW_OFFSET);
+      }
+      cairo_stroke(cr);
     }
-    cairo_stroke(cr);
 
     // We'll be modifying the transformation matrix so
     // we save the current one to restore later
@@ -208,8 +207,8 @@ void Ruler::drawSingleTick(cairo_t *cr, double linePosition, double lineLength, 
         // Get the extents of the text if it were drawn
         cairo_text_extents_t textExtents;
         cairo_text_extents(cr, label.c_str(), &textExtents);
-        // Draw the label if there's enough room
-        if (textExtents.x_advance < majorTickSpacing)
+        // Draw the label if there's enough room between the major ticks and at least part of the text is within the drawing area
+        if (textExtents.x_advance < majorTickSpacing && linePosition + textExtents.x_advance > 0 && linePosition < DRAW_AREA_SIZE)
         {
             if (orientation == HORIZONTAL)
             {
