@@ -141,17 +141,16 @@ void Ruler::draw(GtkWidget *widget, cairo_t *cr)
     // Calculate the line length for the major ticks given the size of the ruler
     double lineLength = (orientation == HORIZONTAL) ? MAJOR_TICK_LENGTH * height : MAJOR_TICK_LENGTH * width;
 
-    // Draw the range [0, upperLimit]
-    drawTicks(cr, 0.0, upperLimit, true, lineLength);
+    int firstTick = RulerCalculations::firstTick(lowerLimit, majorInterval);
 
-    // Draw the range [lowerLimit, 0]
-    drawTicks(cr, lowerLimit, 0.0, false, lineLength);
+    // Draw the range [0, upperLimit]
+    drawTicks(cr, firstTick, upperLimit, lineLength);
 }
 
-void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper, double lineLength)
+void Ruler::drawTicks(cairo_t *cr, double lower, double upper, double lineLength)
 {
     // Position in ruler range
-    double pos = lowerToUpper ? lower : upper;
+    double pos = lower;
 
     const double DRAW_AREA_ORIGIN = 0;
     // We need to scale to either [0, width] or [0, height] depending
@@ -159,28 +158,24 @@ void Ruler::drawTicks(cairo_t *cr, double lower, double upper, bool lowerToUpper
     const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
 
     // Move pos across range
-    while ((lowerToUpper && pos < upper) || (!lowerToUpper && lower < pos))
+    while (pos < upper)
     {
         // Map pos from the ruler range to a drawing area position
         double s = RulerCalculations::scaleToRange(pos, lowerLimit, upperLimit, DRAW_AREA_ORIGIN, DRAW_AREA_ORIGIN + DRAW_AREA_SIZE);
         // Draw tick for this position
         drawSingleTick(cr, s, lineLength, true, std::to_string(static_cast<int>(floor(pos))));
 
-        if (lowerToUpper)
-        {
-            drawSubTicks(cr, s, s + majorTickSpacing, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            pos += majorInterval;
-        }
-        else
-        {
-            drawSubTicks(cr, s - majorTickSpacing, s, 0, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            pos -= majorInterval;
-        }
+        drawSubTicks(cr, s, s + majorTickSpacing, 0, LINE_MULTIPLIER * lineLength);
+        pos += majorInterval;
     }
 }
 
 void Ruler::drawSingleTick(cairo_t *cr, double linePosition, double lineLength, bool drawLabel, const std::string &label)
 {
+    // This line won't be visible, don't draw it
+    const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
+    if (linePosition < 0 || linePosition > DRAW_AREA_SIZE) { return; }
+
     // Draw line
     cairo_set_line_width(cr, LINE_WIDTH);
     // Offset the line to get a clear line
@@ -230,7 +225,7 @@ void Ruler::drawSingleTick(cairo_t *cr, double linePosition, double lineLength, 
     cairo_restore(cr);
 }
 
-void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength, bool lowerToUpper)
+void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, double lineLength)
 {
     // We don't need to divide the segment any further so return
     if (depth >= SUBTICK_SEGMENTS.size()) { return; }
@@ -243,14 +238,14 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
     // We draw from lower->upper / upper->lower, but in the process, we might be exceeding
     // the ruler area, so we also check that we're still inside the drawing area
     const double DRAW_AREA_SIZE = (orientation == HORIZONTAL) ? width : height;
-    const double limit = lowerToUpper ? DRAW_AREA_SIZE : 0;
+    const double limit = DRAW_AREA_SIZE;
 
     // Position along the ruler to draw tick at
     double tick = 0;
-    double pos = lowerToUpper ? lower : upper;
+    double pos = lower;
 
     // Draw at most (numSegments - 1) ticks, while not exceeding the limit
-    while (tick < numSegments && ((lowerToUpper && pos < limit) || (!lowerToUpper && limit < pos)))
+    while (tick < numSegments && pos < limit)
     {
         // We don't want to draw the tick for tick == 0, because
         // we would end up drawing over other ticks
@@ -259,17 +254,10 @@ void Ruler::drawSubTicks(cairo_t *cr, double lower, double upper, int depth, dou
             drawSingleTick(cr, pos, lineLength, false, "");
         }
         tick++;
-        if (lowerToUpper)
-        {
-            // Draw ticks at level below
-            drawSubTicks(cr, pos, pos + interval, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            pos += interval;
-        }
-        else
-        {
-            drawSubTicks(cr, pos - interval, pos, depth + 1, LINE_MULTIPLIER * lineLength, lowerToUpper);
-            pos -= interval;
-        }
+        // Draw ticks at level below
+        drawSubTicks(cr, pos, pos + interval, depth + 1, LINE_MULTIPLIER * lineLength);
+
+        pos += interval;
     }
 }
 
@@ -329,4 +317,9 @@ int RulerCalculations::intervalPixelSpacing(double interval, double lower, doubl
 
     const double RANGE_SIZE = upper - lower;
     return static_cast<int>(round((allocatedSize / RANGE_SIZE) * interval));
+}
+
+int RulerCalculations::firstTick(double lower, int interval)
+{
+    return static_cast<int>(floor(lower / interval)) * interval;
 }

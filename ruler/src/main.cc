@@ -30,18 +30,13 @@ main (int   argc,
 
     hRulerArea = gtk_builder_get_object(builder, "hrulerarea");
     Ruler::Ptr hruler = Ruler::create(Ruler::HORIZONTAL, GTK_WIDGET(hRulerArea));
-    double lower = -12.56;
-    double upper = 27.82;
-    hruler->setRange(lower, upper);
+    hruler->setRange(-123, 278);
 
-    double size = 1920;
+    vRulerArea = gtk_builder_get_object(builder, "vrulerarea");
+    Ruler::Ptr vruler = Ruler::create(Ruler::VERTICAL, GTK_WIDGET(vRulerArea));
+    vruler->setRange(-10, 10);
 
-    std::cout << RulerCalculations::intervalPixelSpacing() << '\n';
-    std::cout << RulerCalculations::calculateInterval(lower, upper, 1920) << '\n';
-
-//    vRulerArea = gtk_builder_get_object(builder, "vrulerarea");
-//    Ruler::Ptr vruler = Ruler::create(Ruler::VERTICAL, GTK_WIDGET(vRulerArea));
-//    vruler->setRange(-10, 10);
+    std::cout << RulerCalculations::firstTick(360, 25);
 
     gtk_main ();
 
